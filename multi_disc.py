@@ -20,19 +20,22 @@ async def merge_disc(p: Path, unsorted=False, verbose=0):
     discPs = list(sorted(p.glob("Disc *"))) + list(sorted(p.glob("Volume *")))
     offset = 0
     counter = 0
+    total = len(list(p.rglob("*.flac")))
     for disc in discPs:
-        print(disc)
         off_num = 0
         for flac_name in sorted(disc.glob("*.flac")):
             counter += 1
             t_num, t_name = track_info.get_track_info(flac_name)
             # print(f"{t_num:0>2.0f} - {t_name}")
+            t_name = t_name.replace("_", " ")
             new_num = t_num + offset
             if not unsorted and counter != new_num:
                 raise ValueError(f"Counter has lost its place for {p} at {counter}")
-            if new_num > 999:
-                raise ValueError(f"new_num is three digits {new_num}")
-            new_path = p / f"{new_num:0>3.0f} - {t_name}"
+            if total < 100:
+                new_path = p / f"{new_num:0>2.0f} - {t_name}"
+            else:
+                new_path = p / f"{new_num:0>3.0f} - {t_name}"
+
             # assert f"{new_num:0>2.0f}" == TinyTag.get(new_path).track
             flac = FLAC(flac_name)
             flac["tracknumber"] = f"{new_num}"
