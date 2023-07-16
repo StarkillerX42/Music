@@ -9,11 +9,11 @@ import multiprocessing as mp
 import regex as re
 
 from pathlib import Path
-from rich import progress_bar
+from rich.progress import track
 from pprint import pprint
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("source", type=str)
 @click.argument("dest", type=Path)
 @click.option("-n", "--dry-run", is_flag=True)
@@ -46,40 +46,44 @@ def rsync(source, dest, dry_run, threads, verbose):
 
     rsync_out_re = re.compile("(?<=receiving incremental file list)\.+")
     pool = []
-    kwargs = "-Przch"
+    kwargs = "-Przch" + "".join("v" for i in range(verbose))
     kwargs += "n" if dry_run else ""
     if verbose == 0:
-        looper = progress_bar(dirs.splitlines())
+        looper = track(dirs.splitlines())
     else:
         looper = dirs.splitlines()
     for d in looper:
         cmd = [
             "rsync",
             kwargs,
-            f"{source}{d}",
-            f"{(dest / d).as_posix()}",
+            f"{source}{d}/",
+            f"{(dest / d).as_posix()}/",
         ]
 
         while len(pool) >= threads:
             for p in pool:
-                if p.poll() is not None:
-                    match p.poll():
+                if verbose >= 3:
+                    print(p.args, p.stdout.read())
+                status = p.poll()
+                if status is not None:
+                    pool.remove(p)
+                    match status:
                         case 0:
-                            pool.remove(p)
                             if verbose >= 2:
                                 print(f"{' '.join(p.args)}")
                                 out = rsync_out_re.search(
-                                    p.stdout.read().decode("utf-8")
+                                    p.stdout.read()
                                 )
                                 if out is not None:
                                     pprint(out, indent=2)
                         case _:
                             print(f"{cmd} returned {p.poll()}")
+                            print(p.stderr.read())
 
             time.sleep(0.1)
         if verbose >= 3:
             print(cmd)
-        pool.append(sub.Popen(cmd, stdout=sub.PIPE))
+        pool.append(sub.Popen(cmd, encoding="utf-8", stdout=sub.PIPE, stderr=sub.PIPE))
 
 
 def main():
