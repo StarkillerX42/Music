@@ -15,7 +15,7 @@ from pprint import pprint
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("source", type=str)
-@click.argument("dest", type=Path)
+@click.argument("dest", type=click.Path(exists=True))
 @click.option("-n", "--dry-run", is_flag=True)
 @click.option(
     "-j",
@@ -25,8 +25,6 @@ from pprint import pprint
 )
 @click.option("-v", "--verbose", count=True)
 def rsync(source, dest, dry_run, threads, verbose):
-    assert dest.exists(), "Given directory doesn't exist"
-
     assert "flac" in dest.as_posix(), "'flac' must be in the provided path"
     assert ":" in source, "Source must be a remote host: <uname>@<domain>:<path>"
 
