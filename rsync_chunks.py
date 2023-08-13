@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Splits up very large rsync tasks into sub-commands to get earlier results
 """
+import re
 import click
 import time
 
 import subprocess as sub
 import multiprocessing as mp
-import regex as re
 
 from pathlib import Path
 from rich.progress import track
@@ -15,7 +15,7 @@ from pprint import pprint
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("source", type=str)
-@click.argument("dest", type=click.Path(exists=True))
+@click.argument("dest", type=click.Path(exists=True, path_type=Path))
 @click.option("-n", "--dry-run", is_flag=True)
 @click.option(
     "-j",
