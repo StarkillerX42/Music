@@ -15,7 +15,7 @@ from rich.progress import track
 
 def safe_path(path: str, handle_parens: bool = False,
               handle_space: bool = False) -> str:
-    for char in "$":
+    for char in "$[]":
         path = path.replace(char, f"\{char}")
     if handle_parens:
         path = path.replace("(", "\(")
@@ -32,6 +32,7 @@ def sync(
     verbose: int = 0,
     dry_run: bool = False,
 ) -> list[str]:
+    dest += "/" if dest[-1] != "/" else ""
     playlist_file = Path(playlist_file)
     rsync_out_re = re.compile("(?<=receiving incremental file list)\.+")
     xspf = ETree.parse(playlist_file)
@@ -147,6 +148,7 @@ def delete_extras(f_names, dest, verbose=0) -> None:
                         dest_host,
                         f'"rm {dest_p}{safe_path(file, handle_space=True)}"',
                     ]),
+                    shell=True,
                     encoding="utf-8",
                     stdout=sub.PIPE,
                     stderr=sub.PIPE,
@@ -159,10 +161,18 @@ def delete_extras(f_names, dest, verbose=0) -> None:
                     stderr=sub.PIPE,
                 )
             if p.returncode != 0:
-                print(
-                    f"{' '.join(p.args)} returned {p.returncode} with"
-                    f" {p.stderr}"
-                )
+                if isinstance(p.args, str):
+                    print(
+                        f"{p.args} returned {p.returncode} with"
+                        f" {p.stderr}"
+                    )
+
+
+                else:
+                    print(
+                        f"{' '.join(p.args)} returned {p.returncode} with"
+                        f" {p.stderr}"
+                    )
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
