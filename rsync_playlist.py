@@ -13,12 +13,19 @@ from pprint import pprint
 from rich.progress import track
 
 
-def safe_path(path: str, handle_parens: bool = False,
-              handle_space: bool = False) -> str:
+def safe_path(
+        path: str,
+        handle_parens: bool = False,
+        handle_brackets: bool = False,
+        handle_space: bool = False
+        ) -> str:
     for char in "$":
         path = path.replace(char, f"\{char}")
+    if handle_brackets:
+        for char in "[]":
+            path = path.replace(char, f"\{char}")
     if handle_parens:
-        for char in "[]()":
+        for char in "()":
             path = path.replace(char, f"\{char}")
     if handle_space:
         path = path.replace(" ", "\ ")
@@ -64,7 +71,7 @@ def sync(
                     "rsync",
                     kwargs,
                     safe_path(f'"{location.as_posix()}"'),
-                    safe_path(f'"{dest}{location.name}"', handle_parens=True),
+                    safe_path(f'"{dest}{location.name}"', handle_brackets=True),
                 ])
                 while len(pool) >= threads:
                     for p in pool:
