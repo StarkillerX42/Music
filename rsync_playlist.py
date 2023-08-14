@@ -15,11 +15,11 @@ from rich.progress import track
 
 def safe_path(path: str, handle_parens: bool = False,
               handle_space: bool = False) -> str:
-    for char in "$[]":
+    for char in "$":
         path = path.replace(char, f"\{char}")
     if handle_parens:
-        path = path.replace("(", "\(")
-        path = path.replace(")", "\)")
+        for char in "[]()":
+            path = path.replace(char, f"\{char}")
     if handle_space:
         path = path.replace(" ", "\ ")
     return path
@@ -64,7 +64,7 @@ def sync(
                     "rsync",
                     kwargs,
                     safe_path(f'"{location.as_posix()}"'),
-                    safe_path(f'"{dest}{location.name}"'),
+                    safe_path(f'"{dest}{location.name}"', handle_parens=True),
                 ])
                 while len(pool) >= threads:
                     for p in pool:
@@ -115,6 +115,7 @@ def sync(
 
 
 def delete_extras(f_names, dest, verbose=0) -> None:
+    dest += "/" if dest[-1] != "/" else ""
     # Get a list of files
     if ":" in dest:
         dest_host, dest_p = dest.split(":")
